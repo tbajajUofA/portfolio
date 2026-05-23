@@ -13,7 +13,7 @@ const ctx = canvas.getContext('2d');
 // `frame`: current frame counter used during transitions.
 // `TOTAL_FRAMES`: number of animation frames used for a full transition.
 // `BIG`: base font size used for the large (display) text.
-const states = ['TEJINDER', 'TJ'];
+const states = ['I AM TEJINDER', 'I AMTJ'];
 let idx = 0;
 let animId = null;
 let phase = 'idle';
@@ -174,14 +174,7 @@ function drawGlitch(text, t) {
   }
 }
 
-/**
- * Paint subtle horizontal scanlines over the canvas to give a retro display feel.
- */
-function drawScanlines() {
-  const { W, H } = dims;
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
-  for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
-}
+
 
 /**
  * Render the static (idle) state for a given text value. Clears the canvas to
@@ -193,7 +186,6 @@ function renderIdle(text) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
   drawBase(text, 0, 0, '#000', '#555', 1);
-  drawScanlines();
 }
 
 /**
@@ -253,7 +245,6 @@ function renderTransition(fromText, toText, progress) {
     ctx.restore();
   }
 
-  drawScanlines();
 }
 
 /**
