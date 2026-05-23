@@ -1,8 +1,18 @@
 /* ── Name canvas electric effect ── */
 
+// Top-level DOM and rendering context used for the animated name canvas.
+// `canvas`: the <canvas> element with id 'nameCanvas'.
+// `ctx`: 2D rendering context used for all drawing operations.
 const canvas = document.getElementById('nameCanvas');
 const ctx = canvas.getContext('2d');
 
+// `states`: array of name strings that the animation cycles through.
+// `idx`: current index into `states`.
+// `animId`: id returned from requestAnimationFrame for the active animation (or null).
+// `phase`: 'idle' when static, 'transitioning' when an animated change is in progress.
+// `frame`: current frame counter used during transitions.
+// `TOTAL_FRAMES`: number of animation frames used for a full transition.
+// `BIG`: base font size used for the large (display) text.
 const states = ['TEJINDER', 'TJ'];
 let idx = 0;
 let animId = null;
@@ -11,6 +21,11 @@ let frame = 0;
 const TOTAL_FRAMES = 55;
 const BIG = 160;
 
+/**
+ * Initialize the canvas size based on viewport width and the base font size.
+ * Returns an object with the computed width/height used throughout rendering.
+ * @returns {{W: number, H: number}} Computed canvas dimensions.
+ */
 function initCanvas() {
   const W = Math.min(window.innerWidth - 32, 900);
   const H = Math.floor(BIG * 1.65);
@@ -21,6 +36,18 @@ function initCanvas() {
 
 let dims = initCanvas();
 
+/**
+ * Draw the main pair of layered text elements used for the logo/name effect.
+ * The function draws a large serif-styled text (primary) and a smaller sans-serif
+ * text (secondary) centered on the canvas. Parameters allow small positional
+ * offsets and color/opacity adjustments used by the transition rendering.
+ * @param {string} text - The text to draw.
+ * @param {number} offsetX - Horizontal pixel offset from center.
+ * @param {number} offsetY - Vertical pixel offset from center.
+ * @param {string} colorBig - CSS color for the large text layer.
+ * @param {string} colorSmall - CSS color for the small text layer.
+ * @param {number} alpha - Global opacity to use while drawing.
+ */
 function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   const { W, H } = dims;
   const cx = W / 2 + offsetX;
@@ -45,6 +72,20 @@ function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   ctx.globalAlpha = 1;
 }
 
+/**
+ * Recursively draw a lightning-style bolt between two points.
+ * This function builds a jagged polyline with randomized subdivision points
+ * and may spawn short child branches for visual complexity.
+ * @param {number} x1 - Start x-coordinate.
+ * @param {number} y1 - Start y-coordinate.
+ * @param {number} x2 - End x-coordinate.
+ * @param {number} y2 - End y-coordinate.
+ * @param {number} roughness - Typical displacement for intermediate points.
+ * @param {string} color - Stroke color / shadow color for the bolt.
+ * @param {number} lw - Line width for the bolt stroke.
+ * @param {number} blur - Shadow blur to apply for glow.
+ * @param {number} depth - Recursive depth (used to limit branching).
+ */
 function bolt(x1, y1, x2, y2, roughness, color, lw, blur, depth) {
   if (depth > 3) return;
   const { W, H } = dims;
@@ -82,6 +123,12 @@ function bolt(x1, y1, x2, y2, roughness, color, lw, blur, depth) {
   }
 }
 
+/**
+ * Create a single randomized bolt originating from a random canvas edge
+ * and terminating roughly near the canvas center. The appearance (color,
+ * line width, blur) is randomized and scaled by the provided intensity.
+ * @param {number} intensity - Multiplier (0..1) controlling stroke widths.
+ */
 function randomBolt(intensity) {
   const { W, H } = dims;
   const pad = -80;
@@ -105,6 +152,12 @@ function randomBolt(intensity) {
   bolt(x1, y1, x2, y2, 70 + Math.random() * 80, color, lw * intensity, blur, 0);
 }
 
+/**
+ * Draw horizontal glitch "slices" of the provided text. Each slice is a clipped
+ * rectangle with a horizontal offset to create a corrupted/glitchy appearance.
+ * @param {string} text - The text to glitch.
+ * @param {number} t - Intensity factor (0..1) controlling horizontal offsets.
+ */
 function drawGlitch(text, t) {
   const { W, H } = dims;
   const slices = 5 + Math.floor(Math.random() * 8);
@@ -121,12 +174,20 @@ function drawGlitch(text, t) {
   }
 }
 
+/**
+ * Paint subtle horizontal scanlines over the canvas to give a retro display feel.
+ */
 function drawScanlines() {
   const { W, H } = dims;
   ctx.fillStyle = 'rgba(0,0,0,0.06)';
   for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
 }
 
+/**
+ * Render the static (idle) state for a given text value. Clears the canvas to
+ * white and paints the base text plus scanlines.
+ * @param {string} text - The text to render in the idle state.
+ */
 function renderIdle(text) {
   const { W, H } = dims;
   ctx.fillStyle = '#fff';
@@ -135,6 +196,15 @@ function renderIdle(text) {
   drawScanlines();
 }
 
+/**
+ * Render a transition animation between two text values.
+ * `progress` is expected to be in the 0..1 range where 0 is the start and 1
+ * is the end of the transition. The function renders bolts, glitches and
+ * crossfades between the old and new text depending on progress.
+ * @param {string} fromText - Text value transitioning from.
+ * @param {string} toText - Text value transitioning to.
+ * @param {number} progress - Normalized progress (0..1) for the transition.
+ */
 function renderTransition(fromText, toText, progress) {
   const { W, H } = dims;
   ctx.fillStyle = '#000';
@@ -186,6 +256,12 @@ function renderTransition(fromText, toText, progress) {
   drawScanlines();
 }
 
+/**
+ * Start the transition animation to the next name in the `states` array.
+ * If an animation is already running this function is a no-op. Uses
+ * `requestAnimationFrame` to drive the transition frames and updates
+ * `phase`/`frame`/`animId` accordingly.
+ */
 function triggerName() {
   if (phase === 'transitioning') return;
   const fromText = states[idx];
