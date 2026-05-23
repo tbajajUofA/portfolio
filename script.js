@@ -284,20 +284,3 @@ window.addEventListener('resize', () => {
 renderIdle(states[0]);
 
 
-/* ── Contact form AJAX submission ── */
-const form = document.querySelector('form');
-if (form) {
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    const formData = new FormData(this);
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', this.getAttribute('action'));
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4 && xhr.status === 200) {
-        alert('Thank you for your message!');
-      }
-    };
-    xhr.send(new URLSearchParams(formData).toString());
-  });
-}
