@@ -20,7 +20,7 @@ let idleAnimId = null;
 let idleFrame  = 0;
 let phase = 'idle';
 let frame = 0;
-const TOTAL_FRAMES = 65;
+const TOTAL_FRAMES = 60;
 const BIG = 188;
 
 /**
@@ -187,7 +187,7 @@ function randomBolt(intensity) {
  */
 function drawGlitch(text, t, baseAlpha = 0.92) {
   const { W, H } = dims;
-  const slices = 10 + Math.floor(Math.random() * 18);
+  const slices = 4 + Math.floor(Math.random() * 6);
   for (let i = 0; i < slices; i++) {
     const sy  = Math.random() * H;
     const sh  = 1 + Math.random() * BIG * (0.06 + 0.34 * t);
@@ -195,11 +195,8 @@ function drawGlitch(text, t, baseAlpha = 0.92) {
     const oy  = (Math.random() - 0.5) * 7  * t;
     const col = Math.random() < 0.75 ? randNeon() : '#000';
     ctx.save();
-    ctx.shadowColor = col;
-    ctx.shadowBlur  = t * 14;
     ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
     drawBase(text, ox, oy, col, col, baseAlpha);
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
@@ -241,11 +238,9 @@ function renderIdleFrame(text) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.globalAlpha = 0.42;
-  ctx.shadowColor = colA; ctx.shadowBlur = 6;
   ctx.fillStyle = colA; ctx.fillText(text, cx - shift, smallY);
-  ctx.shadowColor = colB;
   ctx.fillStyle = colB; ctx.fillText(text, cx + shift, smallY);
-  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1;
 
   // Neon glitch slice (8 % chance per frame)
   if (Math.random() < 0.08) {
@@ -258,9 +253,8 @@ function renderIdleFrame(text) {
     ctx.font = `900 ${small}px Impact, sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.globalAlpha = 0.9;
-    ctx.shadowColor = col; ctx.shadowBlur = 10;
     ctx.fillStyle = col; ctx.fillText(text, cx + ox, smallY);
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -327,33 +321,32 @@ function renderTransition(fromText, toText, progress) {
     ctx.globalAlpha = 1;
   }
 
-  // ── 2. 8-way neon chromatic star ──
+  // ── 2. 4-way neon chromatic cross (no shadowBlur) ──
   const chromaR = Math.round(bell * 50);
   if (chromaR > 0) {
     ctx.globalAlpha = bell * 0.50;
-    for (let i = 0; i < 8; i++) {
-      const ang = i * Math.PI / 4;
+    const axes = [0, 2, 4, 6]; // E, S, W, N — 4 directions
+    for (let i = 0; i < 4; i++) {
+      const ang = axes[i] * Math.PI / 4;
       const dx  = Math.round(Math.cos(ang) * chromaR);
       const dy  = Math.round(Math.sin(ang) * chromaR * 0.22);
-      ctx.shadowColor = NEON[i]; ctx.shadowBlur = 10 + bell * 18;
       drawBase(activeText, dx, dy, NEON[i], NEON[i], 1);
     }
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1;
   }
 
-  // ── 3. Skewed warp ghost layers ──
-  if (bell > 0.28) {
-    for (let s = 0; s < 4; s++) {
-      const skX = (Math.random() - 0.5) * 0.18 * bell;
-      const skY = (Math.random() - 0.5) * 0.09 * bell;
+  // ── 3. Skewed warp ghost (2 layers only) ──
+  if (bell > 0.35) {
+    for (let s = 0; s < 2; s++) {
+      const skX = (Math.random() - 0.5) * 0.16 * bell;
+      const skY = (Math.random() - 0.5) * 0.08 * bell;
       const dx  = (Math.random() - 0.5) * 36 * bell;
       const col = randNeon();
       ctx.save();
       ctx.transform(1, skY, skX, 1, 0, 0);
-      ctx.globalAlpha = bell * 0.20;
-      ctx.shadowColor = col; ctx.shadowBlur = 14;
+      ctx.globalAlpha = bell * 0.18;
       drawBase(activeText, dx, 0, col, col, 1);
-      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1;
       ctx.restore();
     }
   }
@@ -366,8 +359,8 @@ function renderTransition(fromText, toText, progress) {
   if (progress < 0.65) drawBase(fromText, 0, 0, '#000', '#000', 1 - Math.min(progress / 0.52, 1) * 0.94);
   if (progress > 0.35) drawBase(toText,   0, 0, '#000', '#000', Math.min((progress - 0.35) / 0.52, 1));
 
-  // ── 6. Neon inversion strips ──
-  const numInvert = Math.floor(bellSq * 6);
+  // ── 6. Neon inversion strips (max 2) ──
+  const numInvert = Math.floor(bellSq * 2);
   for (let i = 0; i < numInvert; i++) {
     const iy  = Math.random() * H;
     const ih  = BIG * (0.03 + Math.random() * 0.22);
@@ -376,14 +369,12 @@ function renderTransition(fromText, toText, progress) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, iy, W, ih); ctx.clip();
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, iy, W, ih);
-    ctx.shadowColor = col; ctx.shadowBlur = 16;
     drawBase(activeText, ix, 0, col, col, 0.96);
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── 7. VHS displacement bars with neon glow ──
-  const numBars = Math.floor(bell * 11);
+  // ── 7. VHS displacement bars (max 4) ──
+  const numBars = Math.floor(bell * 4);
   for (let i = 0; i < numBars; i++) {
     const barY = Math.random() * H;
     const barH = BIG * (0.04 + Math.random() * 0.30);
@@ -392,27 +383,23 @@ function renderTransition(fromText, toText, progress) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, barY, W, barH); ctx.clip();
     ctx.fillStyle = '#fff'; ctx.fillRect(0, barY, W, barH);
-    ctx.shadowColor = col; ctx.shadowBlur = 8;
     drawBase(activeText, barX, 0, col, col, 0.82);
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── 8. Ghost echo copies in neon ──
-  if (bell > 0.22) {
+  // ── 8. Ghost echo copies (2 neon) ──
+  if (bell > 0.30) {
     ctx.globalAlpha = bell * 0.15;
-    for (let e = 0; e < 6; e++) {
+    for (let e = 0; e < 2; e++) {
       const ex  = (Math.random() - 0.5) * 34 * bell;
       const ey  = (Math.random() - 0.5) * 14 * bell;
-      const col = randNeon();
-      ctx.shadowColor = col; ctx.shadowBlur = 12;
-      drawBase(activeText, ex, ey, col, col, 1);
+      drawBase(activeText, ex, ey, randNeon(), randNeon(), 1);
     }
-    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1;
   }
 
-  // ── 9. Neon pixel explosion ──
-  const numPx = Math.floor(bellCu * 80);
+  // ── 9. Neon pixel explosion (rects only — cheap) ──
+  const numPx = Math.floor(bellCu * 35);
   for (let i = 0; i < numPx; i++) {
     ctx.fillStyle   = randNeon();
     ctx.globalAlpha = 0.35 + Math.random() * 0.6;
@@ -420,10 +407,10 @@ function renderTransition(fromText, toText, progress) {
   }
   ctx.globalAlpha = 1;
 
-  // ── 10. Rainbow scanlines ──
+  // ── 10. Rainbow scanlines (every 4 px, low probability) ──
   ctx.globalAlpha = bell * 0.09;
-  for (let y = 0; y < H; y += 2) {
-    if (Math.random() < 0.30) {
+  for (let y = 0; y < H; y += 4) {
+    if (Math.random() < 0.20) {
       ctx.fillStyle = randNeon();
       ctx.fillRect(Math.random() * W * 0.2, y, W * (0.28 + Math.random() * 0.6), 1);
     }
