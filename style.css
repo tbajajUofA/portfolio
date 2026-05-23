@@ -27,10 +27,9 @@ main {
 /* ── Name canvas ── */
 #nameCanvas {
   display: block;
-  margin: 0 auto;
   cursor: pointer;
-  max-width: 100%;
   width: 100%;
+  height: auto;
 }
 
 /* ── Centered name block ── */
@@ -40,6 +39,7 @@ main {
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
+  width: min(calc(100vw - 16px), 1100px);
 }
 
 /* ── Buttons ── */

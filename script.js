@@ -13,7 +13,7 @@ const ctx = canvas.getContext('2d');
 // `frame`: current frame counter used during transitions.
 // `TOTAL_FRAMES`: number of animation frames used for a full transition.
 // `BIG`: base font size used for the large (display) text.
-const states = ['I AM TEJINDER', 'I AMTJ'];
+const states = ['I AM TEJINDER', 'I AM TJ'];
 let idx = 0;
 let animId = null;
 let phase = 'idle';
@@ -23,12 +23,11 @@ const BIG = 160;
 
 /**
  * Initialize the canvas size based on viewport width and the base font size.
- * Returns an object with the computed width/height used throughout rendering.
  * @returns {{W: number, H: number}} Computed canvas dimensions.
  */
 function initCanvas() {
-  const W = Math.min(window.innerWidth - 32, 900);
-  const H = Math.floor(BIG * 1.65);
+  const W = Math.min(window.innerWidth - 16, 1100);
+  const H = Math.floor(BIG * 1.38);
   canvas.width = W;
   canvas.height = H;
   return { W, H };
@@ -37,15 +36,14 @@ function initCanvas() {
 let dims = initCanvas();
 
 /**
- * Draw the main pair of layered text elements used for the logo/name effect.
- * The function draws a large serif-styled text (primary) and a smaller sans-serif
- * text (secondary) centered on the canvas. Parameters allow small positional
- * offsets and color/opacity adjustments used by the transition rendering.
+ * Draw the two overlapping text layers that produce the logo/name effect.
+ * A large vertically-stretched serif layer sits behind a smaller Impact layer,
+ * both centered at the same point so they overlap and create depth.
  * @param {string} text - The text to draw.
  * @param {number} offsetX - Horizontal pixel offset from center.
  * @param {number} offsetY - Vertical pixel offset from center.
  * @param {string} colorBig - CSS color for the large text layer.
- * @param {string} colorSmall - CSS color for the small text layer.
+ * @param {string} colorSmall - CSS color for the small overlapping layer.
  * @param {number} alpha - Global opacity to use while drawing.
  */
 function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
@@ -54,21 +52,35 @@ function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   const cy = H / 2 + offsetY;
   ctx.globalAlpha = alpha;
 
+  // ── Large vertically-stretched serif layer ──
   ctx.save();
   ctx.scale(1, 1.55);
-  ctx.font = `900 ${BIG}px "Times New Roman", serif`;
+  // Fit font size to canvas width so text never clips
+  let bigSize = BIG;
+  ctx.font = `900 ${bigSize}px "Times New Roman", serif`;
+  const measuredBig = ctx.measureText(text).width;
+  if (measuredBig > W * 0.97) bigSize = Math.floor(bigSize * (W * 0.97) / measuredBig);
+  ctx.font = `900 ${bigSize}px "Times New Roman", serif`;
   ctx.fillStyle = colorBig;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, cx, cy / 1.55);
   ctx.restore();
 
-  const small = Math.floor(BIG * 0.38);
+  // ── Smaller Impact layer centered on the same point ──
+  const small = Math.floor(BIG * 0.26);
+  const smallY = cy + small * 0.08;
   ctx.font = `900 ${small}px Impact, sans-serif`;
-  ctx.fillStyle = colorSmall;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, cx, cy + small * 0.08);
+  // White outline pass
+  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+  ctx.lineWidth = Math.max(1.5, small * 0.07);
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, cx, smallY);
+  // Fill pass
+  ctx.fillStyle = colorSmall;
+  ctx.fillText(text, cx, smallY);
   ctx.globalAlpha = 1;
 }
 
@@ -185,7 +197,7 @@ function renderIdle(text) {
   const { W, H } = dims;
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
-  drawBase(text, 0, 0, '#000', '#555', 1);
+  drawBase(text, 0, 0, '#000000d2', '#000000', 1);
 }
 
 /**
